@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+	<head>
+		<title>Game of Life</title>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	</head>
+	<body>
+		<canvas id="interact" style="border:1px solid black" width="900" height="900">
+			You have a crappy web browser and should use something better!
+		</canvas>
+<!--		<canvas id="secondGrid" style="border:1px solid black" width="500" height="500">
+			Here is some text
+		</canvas>-->
+		<script>
+			var canvas = document.getElementById('interact');
+			var render = canvas.getContext('2d');
+			var colors = {foreground: 'black', background: 'white'};
+			
+			var runGrid = function(funct) {
+				var size = prompt('Please enter size of cell.');
+				while(Number.isNaN(size * 1)) {
+					size = prompt('Please enter a number.');
+				}
+				var grid = funct(Math.floor(canvas.height / size), Math.floor(canvas.width / size));
+				var grid2 = grid;
+				draw(grid, render, colors, size);
+				
+				//ask for speed
+				var speed = prompt('What speed would you like to run this at (in milliseconds)?');
+				//make sure they enter a number
+				while(!(speed >= 1)) {
+					speed = prompt('Please enter a number greater then or equal to 1.');
+				}
+				
+				runThrough(grid, render, colors, size, speed, grid2, 0, lifeOf(grid));
+			};
+			
+			var draw = function(grid, element, color, size) {
+				element.fillStyle = color.background;
+				element.fillRect(0, 0, grid[0].length * size, grid.length * size);
+				element.fillStyle = color.foreground;
+				for(var i = 0; i < grid.length; i++) {
+					for(var j = 0; j < grid[i].length; j++) {
+						if(grid[i][j]) {
+							element.fillRect(j * size, i * size, size, size);
+						}
+					}
+				}
+			};
+			
+			var lifeOf = function(input) {
+				var output = 0;
+				for(var i = 0; i < input.length; i++)
+					for(var j = 0; j < input[i].length; j++)
+						if(input[i][j] === true)
+							output++;
+				return output;
+			};
+			
+			var runThrough = function(grid, element, color, size, speed, grid2, iterations, startNumb) {
+				grid = applyIteration(grid);
+				grid2 = applyIteration(applyIteration(grid2));
+				draw(grid, element, color, size);
+				if(equal(grid, grid2))
+					alert("Hit consistancy at around " + iterations + " iterations.\nYou are on a period of: " + getPeriod(grid) + "\nYou started with " + startNumb + " and...\nthere are currently " + lifeOf(grid) + " cells out of " + grid.length * grid[0].length);
+				else
+					setTimeout(function(){
+						runThrough(grid, element, color, size, speed, grid2, iterations + 1, startNumb);
+					}, speed);
+			};
+			
+			var getPeriod = function(start) {
+				var iter = applyIteration(start);
+				for(var output = 1; !equal(start, iter); output++)
+					iter = applyIteration(start);
+				return output;
+			};
+			
+			
+			var equal = function(a, b) {
+				for(var i = 0; i < a.length; i++)
+					for(var j = 0; j < a[i].length; j++)
+						if(a[i][j] !== b[i][j])
+							return false;
+				return true;
+			};
+	
+	
+			var initGrid = {
+				solidSquareInCenter: function(height, width) {
+					var output = [];
+					
+					var cords = {h: {start: Math.floor(height / 4), end: Math.ceil(3 * height / 4)},
+								 w: {start: Math.floor(width / 4) , end: Math.ceil(3 * width / 4)}};
+
+					
+					//iterate for each bit
+					for(var h = 0; h < height; h++) {
+						var addin = [];
+						for(var w = 0; w < width; w++) {
+							addin.push(h > cords.h.start && h < cords.h.end && w > cords.w.start && w < cords.w.end);
+						}
+						output.push(addin);
+					}
+					
+					return output;
+				},
+				
+				solidCircle: function(height, width) {
+					var output = [];
+					
+					var radius = (height < width) ? height / 3 : width / 3;
+					var center = {h: height / 2, w: width / 2};
+					
+					//iterate for each bit
+					for(var h = 0; h < height; h++) {
+						var addin = [];
+						for(var w = 0; w < width; w++) {
+							addin.push((h - center.h) * (h - center.h) + (w - center.w) * (w - center.h) < radius * radius);
+						}
+						output.push(addin);
+					}
+					
+					return output;
+				},
+				
+				dead: function(height, width) {
+					var output = [];
+					
+					for(var h = 0; h < height; h++) {
+						var addin = [];
+						addin.length = width;
+						output.push(addin);
+					}
+					
+					return output;
+				},
+				
+				randCircle: function(height, width) {
+					var output = [];
+					
+					var radius = (height < width) ? height / 3 : width / 3;
+					var center = {h: height / 2, w: width / 2};
+					
+					//iterate for each bit
+					for(var h = 0; h < height; h++) {
+						var addin = [];
+						for(var w = 0; w < width; w++) {
+							addin.push((Math.random() < .5) && ((h - center.h) * (h - center.h) + (w - center.w) * (w - center.h) < radius * radius));
+						}
+						output.push(addin);
+					}
+					
+					return output;
+				},
+				
+				rand: function(height, width) {
+					var output = [];
+
+					//iterate for each bit
+					for(var h = 0; h < height; h++) {
+						var addin = [];
+						for(var w = 0; w < width; w++) {
+							addin.push(Math.random() >= .5);
+						}
+						output.push(addin);
+					}
+
+					return output;
+				},
+				
+				randSquareInCenter: function(height, width) {
+					var output = [];
+					
+					var cords = {h: {start: Math.floor(height / 4), end: Math.ceil(3 * height / 4)},
+								 w: {start: Math.floor(width / 4) , end: Math.ceil(3 * width / 4)}};
+					
+					for(var h = 0; h < height; h++) {
+						var addin = [];
+						for(var w = 0; w < width; w++) {
+							addin.push(Math.random() < .5 && h > cords.h.start && h < cords.h.end && w > cords.w.start && w < cords.w.end);
+						}
+						output.push(addin);
+					}
+					return output;
+				}
+			};
+			
+			
+			/**
+			 * @param grid: array of arrays of booleans
+			 */
+			var applyIteration = function(grid) {
+				var output = [];
+				
+				//iterate through grid
+				for(var i = 0; i < grid.length; i++) {
+					var addin = [];
+					for(var j = 0; j < grid[i].length; j++) {
+						addin.push(compute(grid, i, j));
+					}
+					output.push(addin);
+				}
+				return output;
+			};
+			
+			
+			var compute = function(grid, x, y) {
+				var sum = summiate(grid, x, y);
+				if(!grid[x][y] && sum === 3)
+					return true;
+				else if(grid[x][y] && (sum === 3 || sum === 2))
+					return true;
+				else
+					return false;
+			};
+			
+			var summiate = function(grid, x, y) {
+				var out = 0;
+				var xm = x - 1 >= 0;
+				var xp = x + 1 < grid.length;
+				var ym = y - 1 >= 0;
+				var yp = y + 1 < grid[0].length;
+				if(xm) {
+					out += grid[x - 1][y];
+					if(ym)
+						out += grid[x - 1][y - 1];
+					if(yp)
+						out += grid[x - 1][y + 1];
+				}
+				if(xp) {
+					out += grid[x + 1][y];
+					if(ym)
+						out += grid[x + 1][y - 1];
+					if(yp)
+						out += grid[x + 1][y + 1];
+				}
+				if(ym)
+					out += grid[x][y - 1];
+				if(yp)
+					out += grid[x][y + 1];
+
+				return out;
+			};
+		</script>
+	</body>
+</html>
