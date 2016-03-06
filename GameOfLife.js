@@ -5,7 +5,7 @@ var standard = standard || {};
 
 var canvas = document.getElementById('interact');
 var render = canvas.getContext('2d');
-gameOfLife.colors = {
+colors = {
 	foreground: 'black',
 	background: 'white'
 };
@@ -58,6 +58,12 @@ standard.initMatrix = function(xSize, ySize, init) {
 	return output;
 };
 
+standard.isColor = function(input) {
+	var d = document.createElement('div');
+	d.style.backgroundColor = input;
+	return d.style !== '';
+};
+
 specificPrompt.gen = function(initStr, correctionStr, paramater, initExample, correctionExample) {
 	var output = prompt(initStr, initExample);
 	while(!paramater(output))
@@ -77,35 +83,65 @@ specificPrompt.positiveInteger = function(initStr, correctionStr, initExample, c
 	}, initExample, correctionExample);
 };
 
-gameOfLife.start = function(funct) {
-	//set default funct to random
-	if(!(funct instanceof Function))
-		funct = gameOfLife.initGrid.rand;
+specificPrompt.color = function(initStr, correctionStr, initExample, correctionExample) {
+	specificPrmopt.gen(initStr, correctionStr, standard.isColor, initExample, correctionExample)
+};
 
+gameOfLife.start = function(input) {
+	//check for if input was passed in as obj
+	if(!(input instanceof Object))
+		input = {};
+	
+	//set default funct to random
+	if(!(input.setup instanceof Function))
+		input.setup = gameOfLife.initGrid.rand;
+
+	//number is positive integer
+	var isPosInt = function (x) {
+		return x > 0 && Number.isInteger(x);
+	};
+	
 	//get size of cell
-	var size = specificPrompt.positiveInteger('Please enter size of cell in pixels.', 'Please enter a positive integer.');
+	if(!isPosInt(input.size))
+		input.size = specificPrompt.positiveInteger('Please enter size of cell in pixels.', 'Please enter a positive integer.');
 
 	//set size of canvas
-	var height = specificPrompt.positiveInteger('Please enter the height in cells.\nEach cell is ' + size + ' pixels tall.', 'This must be a positive integer');
-	var width = specificPrompt.positiveInteger('Please enter the width in cells.\nEach cell is ' + size + ' pixels wide.', 'This must be a positive integer');
-	canvas.height = size * height;
-	canvas.width = size * width;
+		//width
+	if(!isPosInt(input.width))
+		input.width = specificPrompt.positiveInteger('Please enter the width in cells.\nEach cell is ' + input.size + ' pixels wide.', 'This must be a positive integer');
+	
+		//height
+	if(!isPosInt(input.height))
+		input.height = specificPrompt.positiveInteger('Please enter the height in cells.\nEach cell is ' + input.size + ' pixels tall.', 'This must be a positive integer');
+	
+	canvas.height = input.size * input.height;
+	canvas.width = input.size * input.width;
 
 	//set up arrays
-	var grid = funct(width, height);
+	var grid = input.setup(input.width, input.height);
 	var grid2 = standard.deepCopy(grid);
+	
+	//check for colors
+	if(!(input.colors instanceof Object))
+		input.colors = colors;
 
 	//draw main grid to screen
-	drawBitMatrix(grid, render, gameOfLife.colors, size);
+	drawBitMatrix(grid, render, input.colors, input.size);
 
 	//ask for speed
-	var speed = specificPrompt.naturalNumber('What speed would you like to run this at (in milliseconds per frame, 0 will go as fast as possible)?', 'Please enter a number greater then or equal to 0.');
+	input.speed = specificPrompt.naturalNumber('What speed would you like to run this at (in milliseconds per frame, 0 not will not do any rendering)?', 'Please enter a number greater then or equal to 0.');
+	
+	//prompt if invalid colors
+	if(!standard.isColor(input.colors.background))
+		input.colors.background = specificPrompt.color('Please enter a background color.', 'That was not a valid color.', '', 'white');
+	if(!standard.isColor(input.colors.foreground))
+		input.colors.foreground = specificPrompt.color('Please enter a foreground color.', 'That was not a valid color.', '', 'black');
 
 	//run simulation
-	if(speed === 0)	//if speed is 0 run quick version
+	if(input.speed === 0)	//if speed is 0 run quick version
 		gameOfLife.runThroughFast(grid, grid2, gameOfLife.lifeOf(grid));
 	else
-		gameOfLife.runThroughSlow(grid, grid2, render, gameOfLife.colors, size, speed, 0, gameOfLife.lifeOf(grid));
+		gameOfLife.runThroughSlow(grid, grid2, render, input.colors, input.size, input.speed, 0, gameOfLife.lifeOf(grid));
 };
 
 var drawBitMatrix = function(grid, element, color, pixelSize) {
@@ -363,4 +399,4 @@ gameOfLife.compute = function(prevVal, numbAdjacent) {
 			return false;
 };
 
-gameOfLife.start(gameOfLife.initGrid.rand);
+gameOfLife.start({});
