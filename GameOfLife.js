@@ -40,7 +40,9 @@ standard.deepEqual = function(a, b) {
 
 	//all other types
 	for(var i in a)
-		standard.deepEqual(a[i], b[i]);
+		if(!standard.deepEqual(a[i], b[i]))
+			return false;
+	return true;
 };
 
 standard.initMatrix = function(xSize, ySize, init) {
@@ -101,7 +103,7 @@ gameOfLife.start = function(funct) {
 
 	//run simulation
 	if(speed === 0)	//if speed is 0 run quick version
-		gameOfLife.runThroughFast(grid, grid2, render, gameOfLife.colors, size, gameOfLife.lifeOf(grid));
+		gameOfLife.runThroughFast(grid, grid2, gameOfLife.lifeOf(grid));
 	else
 		gameOfLife.runThroughSlow(grid, grid2, render, gameOfLife.colors, size, speed, 0, gameOfLife.lifeOf(grid));
 };
@@ -127,10 +129,7 @@ var drawBitMatrix = function(grid, element, color, pixelSize) {
 	}
 };
 
-gameOfLife.runThroughFast = function(grid, backgroundGrid, element, color, size, startNumb) {
-	//get iterations between renders
-	var iterationsBetweenRender = specificPrompt.naturalNumber('Please enter number of iterations between rendering.\n(0 is reserved for no rendering.)', 'Number must be greater then or equal to 0');
-	
+gameOfLife.runThroughFast = function(grid, backgroundGrid, startNumb) {
 	//run loop
 	var iterations = 0;
 	
@@ -138,13 +137,10 @@ gameOfLife.runThroughFast = function(grid, backgroundGrid, element, color, size,
 	var appItr = gameOfLife.applyIteration;
 	var check = standard.deepEqual;
 	do {
+		iterations++;
 		//apply iteration to main grid, and two to background grid
 		grid = appItr(grid);
 		backgroundGrid = appItr(appItr(backgroundGrid));
-		
-		//draw to canvas
-		if(iterations % iterationsBetweenRender === 0)
-			drawBitMatrix(grid, element, color, size);
 	} while(!check(grid, backgroundGrid));
 	
 	//output end information
@@ -164,12 +160,12 @@ gameOfLife.runThroughSlow = function(grid, backgroundGrid, element, color, size,
 		gameOfLife.outputInfo(iterations, grid, startNumb);
 	else
 		setTimeout(function(){
-			gameOfLife.runThroughSlow(grid, element, color, size, speed, backgroundGrid, iterations + 1, startNumb);
+			gameOfLife.runThroughSlow(grid, backgroundGrid, element, color, size, speed, iterations + 1, startNumb);
 		}, speed);
 };
 
 gameOfLife.outputInfo = function(iterations, grid, startNumb) {
-	alert('Hit stability at around ' + iterations + ' iterations.\nYou are on a period of: ' + gameOfLife.getPeriod(grid) + '\nYou started with ' + startNumb + 'and...\n there are currently ' + gameOfLife.lifeOf(grid) + ' cells out of ' + grid.length * grid[0].length);
+	alert('Hit stability at around ' + iterations + ' iterations.\nYou are on a period of: ' + gameOfLife.getPeriod(grid) + '\nYou started with ' + startNumb + ' and...\n there are currently ' + gameOfLife.lifeOf(grid) + ' cells out of ' + grid.length * grid[0].length);
 };
 
 gameOfLife.lifeOf = function(input) {
