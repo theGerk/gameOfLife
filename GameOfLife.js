@@ -94,16 +94,16 @@ gameOfLife.start = function(funct) {
 	var grid2 = standard.deepCopy(grid);
 
 	//draw main grid to screen
-	drawBitMatrix(grid, render, colors, size);
+	drawBitMatrix(grid, render, gameOfLife.colors, size);
 
 	//ask for speed
 	var speed = specificPrompt.naturalNumber('What speed would you like to run this at (in milliseconds per frame, 0 will go as fast as possible)?', 'Please enter a number greater then or equal to 0.');
 
 	//run simulation
 	if(speed === 0)	//if speed is 0 run quick version
-		gameOfLife.runThroughFast(grid, grid2, render, colors, size, lifeOf(grid));
+		gameOfLife.runThroughFast(grid, grid2, render, gameOfLife.colors, size, gameOfLife.lifeOf(grid));
 	else
-		gameOfLife.runThrough(grid, grid2, render, colors, size, speed, 0, lifeOf(grid));
+		gameOfLife.runThroughSlow(grid, grid2, render, gameOfLife.colors, size, speed, 0, gameOfLife.lifeOf(grid));
 };
 
 var drawBitMatrix = function(grid, element, color, pixelSize) {
@@ -133,15 +133,19 @@ gameOfLife.runThroughFast = function(grid, backgroundGrid, element, color, size,
 	
 	//run loop
 	var iterations = 0;
+	
+	//de-refrence some functions
+	var appItr = gameOfLife.applyIteration;
+	var check = standard.deepEqual;
 	do {
 		//apply iteration to main grid, and two to background grid
-		grid = applyItteration(grid);
-		backgroundGrid = applyIteration(applyIteration(backgroundGrid));
+		grid = appItr(grid);
+		backgroundGrid = appItr(appItr(backgroundGrid));
 		
 		//draw to canvas
 		if(iterations % iterationsBetweenRender === 0)
 			drawBitMatrix(grid, element, color, size);
-	} while(!standard.deepEqual(grid, backgroundGrid));
+	} while(!check(grid, backgroundGrid));
 	
 	//output end information
 	gameOfLife.outputInfo(iterations, grid, startNumb);
@@ -149,8 +153,8 @@ gameOfLife.runThroughFast = function(grid, backgroundGrid, element, color, size,
 
 gameOfLife.runThroughSlow = function(grid, backgroundGrid, element, color, size, speed, iterations, startNumb) {
 	//apply one iteration to main grid, and two to the background grid
-	grid = applyIteration(grid);
-	backgroundGrid = applyIteration(applyIteration(backgroundGrid));
+	grid = gameOfLife.applyIteration(grid);
+	backgroundGrid = gameOfLife.applyIteration(gameOfLife.applyIteration(backgroundGrid));
 	
 	//draw to canvas
 	drawBitMatrix(grid, element, color, size);
@@ -160,7 +164,7 @@ gameOfLife.runThroughSlow = function(grid, backgroundGrid, element, color, size,
 		gameOfLife.outputInfo(iterations, grid, startNumb);
 	else
 		setTimeout(function(){
-			runThrough(grid, element, color, size, speed, backgroundGrid, iterations + 1, startNumb);
+			gameOfLife.runThroughSlow(grid, element, color, size, speed, backgroundGrid, iterations + 1, startNumb);
 		}, speed);
 };
 
@@ -350,7 +354,6 @@ gameOfLife.applyIteration = function(grid) {
 	return output;
 };
 
-
 gameOfLife.compute = function(prevVal, numbAdjacent) {
 	if(prevVal)
 		if(numbAdjacent === 2 || numbAdjacent === 3)
@@ -363,3 +366,5 @@ gameOfLife.compute = function(prevVal, numbAdjacent) {
 		else
 			return false;
 };
+
+gameOfLife.start(gameOfLife.initGrid.rand);
