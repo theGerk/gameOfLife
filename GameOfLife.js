@@ -5,7 +5,7 @@ var standard = standard || {};
 
 var canvas = document.getElementById('interact');
 var render = canvas.getContext('2d');
-colors = {
+var colors = {
 	foreground: 'black',
 	background: 'white'
 };
@@ -73,7 +73,7 @@ specificPrompt.gen = function(initStr, correctionStr, paramater, initExample, co
 
 specificPrompt.naturalNumber = function(initStr, correctionStr, initExample, correctionExample) {
 	return +specificPrompt.gen(initStr, correctionStr, function(input) {
-		return Number.isInteger(+input) && input >= 0;
+		return Number.isInteger(+input) && input >= 0 && input !== '';
 	}, initExample, correctionExample);
 };
 
